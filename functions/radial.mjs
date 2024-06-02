@@ -1,7 +1,6 @@
 import { JSDOM } from 'jsdom';
 import fetch from 'node-fetch';
 import * as d3 from 'd3';
-import Papa from 'papaparse';
 
 export default async (req, context) => {
   const urls = {
@@ -20,37 +19,51 @@ export default async (req, context) => {
 
     const texts = await Promise.all(responses.map(response => response.text()));
 
-    // Log the raw text responses for debugging
-    console.log("Raw responses:", texts);
+    const dataFlare = d3.csvParse(texts[0]);
+    const dataVue = d3.csvParse(texts[1]);
+    const dataDistritos = d3.csvParse(texts[2]);
 
-    const dataFlare = processFlareData(Papa.parse(texts[0], { header: true }).data);
-    const dataVue = processVueData(Papa.parse(texts[1], { header: true }).data);
-    const dataDistritos = processDistritoData(Papa.parse(texts[2], { header: true }).data);
+    // Process the data
+    const rootFlare = processFlareData(dataFlare);
+    const rootVue = processVueData(dataVue);
+    const rootDistritos = processDistritoData(dataDistritos);
 
-    const dom = new JSDOM(`<!DOCTYPE html><body></body>`);
-    const body = d3.select(dom.window.document.querySelector("body"));
-
-    const width = 960;
-    const height = 960;
-    const radius = width / 2;
-
-    const tree = d3.tree()
-      .size([2 * Math.PI, radius - 100])
-      .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
-
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-    const svgFlare = drawRadialLayout(d3, dataFlare, body, width, height, radius, tree, color);
-    const svgVue = drawRadialLayout(d3, dataVue, body, width, height, radius, tree, color);
-    const svgDistritos = drawRadialLayout(d3, dataDistritos, body, width, height, radius, tree, color);
-
-    const responseHtml = `
-      <div id="radial1" class="radial-container">${svgFlare}</div>
-      <div id="radial2" class="radial-container">${svgVue}</div>
-      <div id="radial3" class="radial-container">${svgDistritos}</div>
+    // Draw the radial layouts and return the HTML
+    const html = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Radial Layout with D3.js</title>
+          <style>
+              .node {
+                  font: 10px sans-serif;
+              }
+              .link {
+                  fill: none;
+                  stroke: #555;
+                  stroke-opacity: 0.4;
+                  stroke-width: 1.5px;
+              }
+              .radial-container {
+                  margin: 20px;
+                  position: relative;
+                  width: 960px;
+                  height: 960px;
+                  border: 1px solid black;
+              }
+          </style>
+      </head>
+      <body>
+          <div id="radial1" class="radial-container">${drawRadialLayout(rootFlare)}</div>
+          <div id="radial2" class="radial-container">${drawRadialLayout(rootVue)}</div>
+          <div id="radial3" class="radial-container">${drawRadialLayout(rootDistritos)}</div>
+      </body>
+      </html>
     `;
 
-    return new Response(responseHtml, {
+    return new Response(html, {
       headers: { "Content-Type": "text/html" }
     });
 
@@ -160,10 +173,19 @@ function processDistritoData(csvData) {
     .sort((a, b) => b.height - a.height || b.value - a.value);
 }
 
-function drawRadialLayout(d3, data, body, width, height, radius, tree, color) {
-  const root = d3.hierarchy(data)
-    .sum(d => d.value)
-    .sort((a, b) => b.height - a.height || b.value - a.value);
+function drawRadialLayout(root) {
+  const { document } = (new JSDOM(`<!DOCTYPE html><body></body>`)).window;
+  const body = d3.select(document.body);
+
+  const width = 960;
+  const height = 960;
+  const radius = width / 2;
+
+  const tree = d3.tree()
+    .size([2 * Math.PI, radius - 100])
+    .separation((a, b) => (a.parent == b.parent ? 1 : 2) / a.depth);
+
+  const color = d3.scaleOrdinal(d3.schemeCategory10);
 
   tree(root);
 
@@ -174,7 +196,7 @@ function drawRadialLayout(d3, data, body, width, height, radius, tree, color) {
     .append("g")
     .attr("transform", `translate(${width / 2},${height / 2})`);
 
-  const link = svg.append("g")
+  svg.append("g")
     .selectAll(".link")
     .data(root.links())
     .enter().append("path")
