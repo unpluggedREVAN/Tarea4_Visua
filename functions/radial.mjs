@@ -1,6 +1,5 @@
 import { JSDOM } from 'jsdom';
 import fetch from 'node-fetch';
-import * as d3 from 'd3';
 
 export default async (req, context) => {
   const urls = {
@@ -20,6 +19,8 @@ export default async (req, context) => {
     const dataVue = await responses[1].json();
     const dataDistritos = await responses[2].json();
 
+    const d3 = await import('d3');
+
     const dom = new JSDOM(`<!DOCTYPE html><body></body>`);
     const body = d3.select(dom.window.document.querySelector("body"));
 
@@ -33,9 +34,9 @@ export default async (req, context) => {
 
     const color = d3.scaleOrdinal(d3.schemeCategory10);
 
-    const svgFlare = drawRadialLayout(dataFlare, body, width, height, radius, tree, color);
-    const svgVue = drawRadialLayout(dataVue, body, width, height, radius, tree, color);
-    const svgDistritos = drawRadialLayout(dataDistritos, body, width, height, radius, tree, color);
+    const svgFlare = drawRadialLayout(d3, dataFlare, body, width, height, radius, tree, color);
+    const svgVue = drawRadialLayout(d3, dataVue, body, width, height, radius, tree, color);
+    const svgDistritos = drawRadialLayout(d3, dataDistritos, body, width, height, radius, tree, color);
 
     const responseHtml = `
       <div id="radial1" class="radial-container">${svgFlare}</div>
@@ -52,7 +53,7 @@ export default async (req, context) => {
   }
 };
 
-function drawRadialLayout(data, body, width, height, radius, tree, color) {
+function drawRadialLayout(d3, data, body, width, height, radius, tree, color) {
   const root = d3.hierarchy(data)
     .sum(d => d.value)
     .sort((a, b) => b.height - a.height || b.value - a.value);
