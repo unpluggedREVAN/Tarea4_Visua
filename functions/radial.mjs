@@ -1,5 +1,7 @@
 import { JSDOM } from 'jsdom';
 import fetch from 'node-fetch';
+import * as d3 from 'd3';
+import Papa from 'papaparse';
 
 export default async (req, context) => {
   const urls = {
@@ -9,41 +11,21 @@ export default async (req, context) => {
   };
 
   try {
-    // Log the initial request
-    console.log("Received request:", req);
-
+    // Fetch all data in parallel
     const responses = await Promise.all([
       fetch(urls.flare),
       fetch(urls.vue),
       fetch(urls.distritos)
     ]);
 
-    // Log the responses status
-    responses.forEach((response, index) => {
-      console.log(`Response ${index + 1} status:`, response.status);
-    });
-
     const texts = await Promise.all(responses.map(response => response.text()));
 
     // Log the raw text responses for debugging
     console.log("Raw responses:", texts);
 
-    // Validate the responses
-    if (!responses[0].ok) {
-      throw new Error(`Failed to fetch flare.json: ${texts[0]}`);
-    }
-    if (!responses[1].ok) {
-      throw new Error(`Failed to fetch vue.json: ${texts[1]}`);
-    }
-    if (!responses[2].ok) {
-      throw new Error(`Failed to fetch distritos_cr.json: ${texts[2]}`);
-    }
-
-    const dataFlare = JSON.parse(texts[0]);
-    const dataVue = JSON.parse(texts[1]);
-    const dataDistritos = JSON.parse(texts[2]);
-
-    const d3 = await import('d3');
+    const dataFlare = processFlareData(Papa.parse(texts[0], { header: true }).data);
+    const dataVue = processVueData(Papa.parse(texts[1], { header: true }).data);
+    const dataDistritos = processDistritoData(Papa.parse(texts[2], { header: true }).data);
 
     const dom = new JSDOM(`<!DOCTYPE html><body></body>`);
     const body = d3.select(dom.window.document.querySelector("body"));
@@ -77,6 +59,106 @@ export default async (req, context) => {
     return new Response(JSON.stringify({ error: error.message, stack: error.stack }), { status: 500 });
   }
 };
+
+function processFlareData(csvData) {
+  const root = { name: "root", children: [] };
+  const map = new Map();
+
+  csvData.forEach(row => {
+    const id = row.id;
+    const value = +row.value;
+    const parts = id.split(".");
+
+    let current = root;
+
+    parts.forEach((part, index) => {
+      const currentPath = parts.slice(0, index + 1).join('.');
+      if (!map.has(currentPath)) {
+        const newNode = { name: part, children: [] };
+        current.children.push(newNode);
+        map.set(currentPath, newNode);
+      }
+
+      current = map.get(currentPath);
+
+      if (index === parts.length - 1) {
+        current.value = value;
+        current.children = null;  // remove children for leaf nodes
+      }
+    });
+  });
+
+  return d3.hierarchy(root)
+    .sum(d => d.value)
+    .sort((a, b) => b.height - a.height || b.value - a.value);
+}
+
+function processVueData(csvData) {
+  const root = { name: "root", children: [] };
+  const map = new Map();
+  map.set("root", root);
+
+  csvData.forEach(row => {
+    const id = row.pathname;
+    const value = +row.size;
+    const parts = id.split(/[/.]/); // split by dot or slash
+
+    let current = root;
+
+    parts.forEach((part, index) => {
+      const currentPath = parts.slice(0, index + 1).join('/');
+      if (!map.has(currentPath)) {
+        const newNode = { name: part, children: [] };
+        if (current.children) {
+          current.children.push(newNode);
+        } else {
+          current.children = [newNode];
+        }
+        map.set(currentPath, newNode);
+      }
+
+      current = map.get(currentPath);
+
+      if (index === parts.length - 1) {
+        current.value = value;
+        current.children = null;  // remove children for leaf nodes
+      }
+    });
+  });
+
+  return d3.hierarchy(root)
+    .sum(d => d.value)
+    .sort((a, b) => b.height - a.height || b.value - a.value);
+}
+
+function processDistritoData(csvData) {
+  const root = { name: "Costa Rica", children: [] };
+  const levels = { 'Costa Rica': root };
+
+  csvData.forEach(row => {
+    const path = row.ID.split('.');
+    const value = +row.POBL_2022;
+    let currentLevel = root;
+
+    for (let i = 0; i < path.length - 1; i++) {
+      const part = path[i];
+      const partId = path.slice(0, i + 1).join('.');
+
+      if (!levels[partId]) {
+        const newPart = { name: part, children: [] };
+        levels[partId] = newPart;
+        currentLevel.children.push(newPart);
+      }
+      currentLevel = levels[partId];
+    }
+
+    currentLevel.children.push({ name: path[path.length - 1], value: value });
+  });
+
+  return d3.hierarchy(root)
+    .sum(d => d.value)
+    .sort((a, b) => b.height - a.height || b.value - a.value);
+}
 
 function drawRadialLayout(d3, data, body, width, height, radius, tree, color) {
   const root = d3.hierarchy(data)
