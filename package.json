@@ -6,6 +6,9 @@
       "d3": "^7.0.0",
       "jsdom": "^16.0.0",
       "node-fetch": "^3.0.0"
+    },
+    "scripts": {
+      "dev": "netlify dev"
     }
 }
   
