@@ -20,6 +20,17 @@ export default async (req, context) => {
     // Log the raw text responses for debugging
     console.log("Raw responses:", texts);
 
+    // Validate the responses
+    if (!responses[0].ok) {
+      throw new Error(`Failed to fetch flare.json: ${texts[0]}`);
+    }
+    if (!responses[1].ok) {
+      throw new Error(`Failed to fetch vue.json: ${texts[1]}`);
+    }
+    if (!responses[2].ok) {
+      throw new Error(`Failed to fetch distritos_cr.json: ${texts[2]}`);
+    }
+
     const dataFlare = JSON.parse(texts[0]);
     const dataVue = JSON.parse(texts[1]);
     const dataDistritos = JSON.parse(texts[2]);
