@@ -15,9 +15,14 @@ export default async (req, context) => {
       fetch(urls.distritos)
     ]);
 
-    const dataFlare = await responses[0].json();
-    const dataVue = await responses[1].json();
-    const dataDistritos = await responses[2].json();
+    const texts = await Promise.all(responses.map(response => response.text()));
+
+    // Log the raw text responses for debugging
+    console.log("Raw responses:", texts);
+
+    const dataFlare = JSON.parse(texts[0]);
+    const dataVue = JSON.parse(texts[1]);
+    const dataDistritos = JSON.parse(texts[2]);
 
     const d3 = await import('d3');
 
@@ -49,6 +54,7 @@ export default async (req, context) => {
     });
 
   } catch (error) {
+    console.error("Error processing data:", error.message);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 };
