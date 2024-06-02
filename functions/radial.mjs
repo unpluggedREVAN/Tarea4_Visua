@@ -9,11 +9,19 @@ export default async (req, context) => {
   };
 
   try {
+    // Log the initial request
+    console.log("Received request:", req);
+
     const responses = await Promise.all([
       fetch(urls.flare),
       fetch(urls.vue),
       fetch(urls.distritos)
     ]);
+
+    // Log the responses status
+    responses.forEach((response, index) => {
+      console.log(`Response ${index + 1} status:`, response.status);
+    });
 
     const texts = await Promise.all(responses.map(response => response.text()));
 
@@ -65,8 +73,8 @@ export default async (req, context) => {
     });
 
   } catch (error) {
-    console.error("Error processing data:", error.message);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error("Error processing data:", error.message, error.stack);
+    return new Response(JSON.stringify({ error: error.message, stack: error.stack }), { status: 500 });
   }
 };
 
