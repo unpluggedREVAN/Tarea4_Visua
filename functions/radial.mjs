@@ -10,7 +10,7 @@ export default async (req, context) => {
   };
 
   try {
-    // Fetch all data in parallel
+    // hace fetch
     const responses = await Promise.all([
       fetch(urls.flare),
       fetch(urls.vue),
@@ -23,12 +23,12 @@ export default async (req, context) => {
     const dataVue = d3.csvParse(texts[1]);
     const dataDistritos = d3.csvParse(texts[2]);
 
-    // Process the data
+    // procesamiento de la información
     const rootFlare = processFlareData(dataFlare);
     const rootVue = processVueData(dataVue);
     const rootDistritos = processDistritoData(dataDistritos);
 
-    // Draw the radial layouts and return the HTML
+    // se dibuja el layout y devuelve el html
     const html = `
       <!DOCTYPE html>
       <html lang="en">
@@ -96,7 +96,7 @@ function processFlareData(csvData) {
 
       if (index === parts.length - 1) {
         current.value = value;
-        current.children = null;  // remove children for leaf nodes
+        current.children = null;  // quita hijos para nodos hoja
       }
     });
   });
@@ -114,7 +114,7 @@ function processVueData(csvData) {
   csvData.forEach(row => {
     const id = row.pathname;
     const value = +row.size;
-    const parts = id.split(/[/.]/); // split by dot or slash
+    const parts = id.split(/[/.]/); // partir por punto o por slash
 
     let current = root;
 
@@ -134,7 +134,7 @@ function processVueData(csvData) {
 
       if (index === parts.length - 1) {
         current.value = value;
-        current.children = null;  // remove children for leaf nodes
+        current.children = null;  // quita hijos por nodos hoja
       }
     });
   });
