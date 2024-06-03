@@ -23,7 +23,7 @@ export default async (req, context) => {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Partition Layout with D3.js</title>
+          <title>Partition Layout</title>
           <style>
               .node {
                   border: solid 1px white;

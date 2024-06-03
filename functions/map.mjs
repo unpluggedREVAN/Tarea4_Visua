@@ -13,7 +13,7 @@ export default async (req, context) => {
         <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-          <title>Mapa de Estados de USA</title>
+          <title>Mapa de USA</title>
         </head>
         <body>
           <svg class="demo" id="demo" width="1000" height="1000"></svg>

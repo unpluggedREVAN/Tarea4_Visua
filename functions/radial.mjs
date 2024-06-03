@@ -35,7 +35,7 @@ export default async (req, context) => {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Radial Layout with D3.js</title>
+          <title>Radial Layout</title>
           <style>
               .node {
                   font: 10px sans-serif;

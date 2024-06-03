@@ -35,7 +35,7 @@ export default async (req, context) => {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Zoomable Circle Packing Layout with D3.js</title>
+          <title>Zoomable Circle Packing Layout</title>
           <style>
               .circle-container {
                   margin: 20px;

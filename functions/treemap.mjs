@@ -22,7 +22,7 @@ export default async (req, context) => {
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Multiple Treemaps with D3.js</title>
+          <title>Multiple Treemaps</title>
           <style>
               .node {
                   border: solid 1px white;
